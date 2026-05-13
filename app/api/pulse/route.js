@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 
+
 import { NextResponse } from "next/server";
 import { savePulseToDB, getLatestPulses } from "@/app/service/redis";
 import { sendEmailAlert } from "@/app/service/email";
