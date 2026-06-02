@@ -1,94 +1,52 @@
-import { createClient } from "redis";
+import { createClient } from 'redis';
 
-// A conexão está correta
 const redisClient = createClient({
-  url: process.env.REDIS_URL,
+  url: process.env.KV_URL
 });
 
-let isConnected = false;
+redisClient.on('error', (err) => console.error('[Redis Service] Erro no cliente:', err));
 
 async function connectToRedis() {
-  if (isConnected) {
-    return;
-  }
-  try {
+  if (!redisClient.isOpen) {
     await redisClient.connect();
-    isConnected = true;
-    console.log("[Redis Service] Conectado ao Vercel Redis (via 'redis').");
-  } catch (err) {
-    console.error("[Redis Service] FALHA AO CONECTAR no Redis:", err);
-    isConnected = false;
   }
 }
 
-// Interface (correta)
-interface PulseData {
-  sensor: boolean;
-  receivedAt: number;
-  humanTime: string;
-}
-
-// savePulseToDB (está correto, sem mudanças)
+// 1. SUA FUNÇÃO DE SALVAR ATUALIZADA E SEGURA
 export async function savePulseToDB(sensorStatus: boolean) {
   try {
     await connectToRedis();
-
-    const receivedAt = Date.now();
-    const pulseData: PulseData = {
-      sensor: sensorStatus,
-      receivedAt: receivedAt,
-      humanTime: new Date(receivedAt).toISOString(),
-    };
-    const dataString = JSON.stringify(pulseData);
-
-    await redisClient.zAdd("pulses:log", {
-      score: receivedAt,
-      value: dataString,
+    
+    const timestamp = Date.now();
+    
+    const pulseData = JSON.stringify({
+      timestamp: timestamp,
+      status: Boolean(sensorStatus),
     });
 
-    console.log("[Redis Service] Pulso salvo com sucesso (via 'redis').");
-    return { success: true };
+    await redisClient.lPush('pulses', pulseData);
+    await redisClient.lTrim('pulses', 0, 99); 
+    
+    console.log("[Redis Service] Novo pulso gravado com sucesso no Upstash!");
+    return true;
   } catch (error) {
-    console.error("[Redis Service] Erro ao salvar no Redis:", error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
+    console.error("[Redis Service] Erro ao salvar pulso no Upstash:", error);
+    return false;
   }
 }
 
-/**
- * (Bônus) Função para buscar os últimos pulsos salvos
- * (A assinatura da função é a mesma, seu route.js não precisa mudar)
- *
- * @param {number} count - Quantidade de pulsos para buscar
- * @returns {Promise<PulseData[]>}
- */
-export async function getLatestPulses(count = 10): Promise<PulseData[]> {
+// 2. A FUNÇÃO QUE ESTAVA FALTANDO PARA O GRÁFICO LER OS DADOS
+export async function getLatestPulses(limit = 50) {
   try {
     await connectToRedis();
-
-    // --- CORREÇÃO 1: Tipamos a declaração (como você sugeriu) ---
-    // Dizemos ao TypeScript: "Confie em nós, isso vai ser um array de strings ou nulo"
-    const rawPulses = (await redisClient.zRange("pulses:log", 0, -1, {
-      REV: true,
-    })) as string[] | null;
-
-    // --- CORREÇÃO 2: Verificação de Nulo/Vazio ---
-    // Esta verificação agora funciona, pois o TS sabe que rawPulses
-    // (se não for nulo) é um array e, portanto, TEM a propriedade .length.
-    if (!rawPulses || rawPulses.length === 0) {
-      console.log("[Redis Service] Nenhum pulso encontrado em 'pulses:log'.");
-      return []; // Retorna um array vazio com segurança
-    }
-
-    // --- CORREÇÃO 3: 'map' ---
-    // Como o TS agora sabe que rawPulses é string[],
-    // ele infere automaticamente 'member' como 'string'.
-    // O erro "implicitly has an 'any' type" desaparece.
-    const pulses = rawPulses.map((member) => JSON.parse(member));
-
-    return pulses; // Já vem na ordem correta (mais novo primeiro)
+    
+    // Puxa o histórico do Redis
+    const rawPulses = await redisClient.lRange('pulses', 0, limit - 1);
+    
+    // Converte de volta de texto para objeto JSON
+    return rawPulses.map(pulse => JSON.parse(pulse));
   } catch (error) {
-    console.error("[Redis Service] Erro ao buscar pulsos:", error);
+    console.error("[Redis Service] Erro ao buscar pulsos no Upstash:", error);
     return [];
   }
 }

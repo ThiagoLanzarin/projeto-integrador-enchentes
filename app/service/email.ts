@@ -11,7 +11,7 @@ if (process.env.RESEND_API_KEY) {
 }
 
 const FROM_EMAIL = "onboarding@resend.dev";
-const TO_EMAIL = "thiago.lanzarin2812@gmail.com"; 
+const TO_EMAIL = "thiago.lanzarin28@gmail.com"; 
 
 export async function sendEmailAlert() {
   try {

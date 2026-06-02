@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-
+// --- IMPORTS OBRIGATÓRIOS NO TOPO DO ARQUIVO ---
 import { NextResponse } from "next/server";
 import { savePulseToDB, getLatestPulses } from "@/app/service/redis";
 import { sendEmailAlert } from "@/app/service/email";
@@ -13,16 +13,17 @@ export async function POST(req) {
   try {
     const body = await req.json();
 
-    if (body.sensor === "true") {
+    if (body.sensor === "true" || body.status === true || body.sensorStatus === true) {
       console.log(
         "[PULSE API] Payload valido. Tentando salvar no banco de dados..."
       );
 
       sendEmailAlert();
-      const dbResult = await savePulseToDB(true);
+      
+      const isSaved = await savePulseToDB(true);
 
-      if (!dbResult.success) {
-        console.error("[PULSE API] Falha ao salvar no DB:", dbResult.error);
+      if (!isSaved) {
+        console.error("[PULSE API] Falha ao salvar no DB.");
         return NextResponse.json(
           { error: "Falha ao salvar no banco de dados" },
           { status: 500 }
@@ -52,19 +53,29 @@ export async function POST(req) {
 
 /**
  * @route GET /api/pulse
- * @desc Apenas para testar se a rota está no ar pelo navegador
+ * @desc Retorna os pulsos no formato exato esperado pelo frontend (data.pulses e humanTime)
  */
 export async function GET() {
   try {
-    const pulses = await getLatestPulses(10);
+    const pulses = await getLatestPulses(50);
 
-    return NextResponse.json(
-      {
-        message: "Mostrando os 10 últimos pulsos recebidos.",
-        pulses: pulses,
-      },
-      { status: 200 }
-    );
+    const formattedPulses = pulses.map(pulse => {
+      const pulseDate = pulse.timestamp ? new Date(Number(pulse.timestamp)) : new Date();
+      
+      return {
+        ...pulse,
+        timestamp: pulse.timestamp,
+        status: pulse.status,
+        humanTime: pulseDate.toISOString(), 
+        createdAt: pulseDate.toISOString()
+      };
+    });
+
+    return NextResponse.json({
+      message: "Mostrando los últimos pulsos recibidos.",
+      pulses: formattedPulses
+    }, { status: 200 });
+
   } catch (error) {
     console.error("[PULSE API] Erro ao buscar pulsos:", error);
     return NextResponse.json(
