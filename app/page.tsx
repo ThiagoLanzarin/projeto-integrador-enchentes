@@ -1,21 +1,24 @@
+"use client";
+
 import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
 import { MainContent } from "@/components/main-content";
-import { Footer } from "@/components/footer";
 
-export default function Home() {
+export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="flex min-h-screen w-full bg-slate-50/50">
+      {/* Barra Lateral fixa na esquerda */}
       <Sidebar />
 
-      <div className="ml-64 flex min-h-screen flex-col">
+      {/* Contêiner da direita que ocupa o resto da tela de forma limpa */}
+      <div className="flex flex-col flex-1 min-w-0">
+        {/* O Header agora vai cravar exatamente no topo da página, sem espaço vazio */}
         <Header />
-
+        
+        {/* Conteúdo principal com os cards e o gráfico azul */}
         <main className="flex-1">
           <MainContent />
         </main>
-
-        <Footer />
       </div>
     </div>
   );

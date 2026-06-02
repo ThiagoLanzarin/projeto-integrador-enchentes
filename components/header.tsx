@@ -1,50 +1,25 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
 import { usePathname } from "next/navigation";
-import Link from "next/link";
 
 export function Header() {
   const pathname = usePathname();
 
-  const getBreadcrumbs = () => {
-    if (pathname === "/") {
-      return [{ label: "Dashboard", href: "/" }];
-    }
-    if (pathname === "/reports") {
-      return [
-        { label: "Dashboard", href: "/" },
-        { label: "Relatórios", href: "/reports" },
-      ];
-    }
-    return [{ label: "Dashboard", href: "/" }];
+  // Define o título dinamicamente de acordo com a URL que está aberta
+  const getTitle = () => {
+    if (pathname === "/reports") return "Relatórios";
+    if (pathname === "/maps") return "Localização";
+    return "Dashboard"; // Padrão para a home "/"
   };
 
-  const breadcrumbs = getBreadcrumbs();
-
   return (
-    <header className="sticky flex items-center h-16 top-0 z-30 border-b border-border bg-white px-6 py-4">
-      <nav className="flex items-center gap-2 text-sm">
-        {breadcrumbs.map((crumb, index) => (
-          <div key={crumb.href} className="flex items-center gap-2">
-            {index > 0 && (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            )}
-            {index === breadcrumbs.length - 1 ? (
-              <span className="font-medium text-muted-foreground">
-                {crumb.label}
-              </span>
-            ) : (
-              <Link
-                href={crumb.href}
-                className="text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {crumb.label}
-              </Link>
-            )}
-          </div>
-        ))}
-      </nav>
+    <header className="flex h-14 items-center gap-4 border-b border-slate-200/80 bg-white px-6 flex-shrink-0">
+      <div className="flex flex-1 items-center">
+        {/* Agora o título vai mudar sozinho ao clicar nos menus laterais! */}
+        <h1 className="text-lg font-semibold text-slate-900 transition-all duration-200">
+          {getTitle()}
+        </h1>
+      </div>
     </header>
   );
 }

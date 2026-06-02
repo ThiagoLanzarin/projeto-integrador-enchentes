@@ -1,21 +1,18 @@
+"use client";
+
 import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
 import { ReportsContent } from "@/components/reports-content";
-import { Footer } from "@/components/footer";
 
-export default function Reports() {
+export default function ReportsPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="flex min-h-screen w-full bg-slate-50/50">
       <Sidebar />
-
-      <div className="ml-64 flex min-h-screen flex-col">
+      <div className="flex flex-col flex-1 min-w-0">
         <Header />
-
-        <main className="flex-1">
+        <main className="flex-1 space-y-6 p-8">
           <ReportsContent />
         </main>
-
-        <Footer />
       </div>
     </div>
   );
